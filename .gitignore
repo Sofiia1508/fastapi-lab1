@@ -1,0 +1,22 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+venv/
+.venv/
+env/
+.env
+build/
+dist/
+
+# PyCharm / IDE
+.idea/
+*.iml
+.vscode/
+
+# Docker
+.docker/
+
+# Poetry (якщо використовуєш)
+.cache/
+dist/
