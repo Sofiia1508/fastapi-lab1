@@ -1,4 +1,5 @@
 version: '3.8'
+
 services:
   db:
     image: postgres:15
@@ -8,9 +9,10 @@ services:
       - POSTGRES_DB=fastapi_db
     ports:
       - "5432:5432"
+
   web:
     build: .
-    command: uvicorn main:app --host 0.0.0.0 --port 8000 --reload
+    command: uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
     volumes:
       - .:/app
     ports:
