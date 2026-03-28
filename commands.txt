@@ -1,0 +1,3 @@
+docker-compose up --build -d
+docker ps
+docker exec -it fastapi_lab1-web-1 pip list
