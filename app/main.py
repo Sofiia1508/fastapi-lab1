@@ -1,33 +1,35 @@
+import os
 from fastapi import FastAPI
-from app.routers import users
+from contextlib import asynccontextmanager
+from app.routers import users, product, auth
 from app.database import engine, Base
-# ВАЖЛИВО: Імпортуй моделі, щоб Base "побачив" таблицю users
-from app import models
+from fastapi import Request
+from fastapi.responses import JSONResponse
 
-# 1. Спочатку створюємо об'єкт app
+
+
+# Використовуємо lifespan замість застарілого on_event
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    # Дія при старті: перевіряємо таблиці
+    async with engine.begin() as conn:
+        await conn.run_sync(Base.metadata.create_all)
+    yield
+    # Дія при вимкненні: закриваємо engine
+    await engine.dispose()
+
 app = FastAPI(
     title="User Management API",
-    description="Лабораторна робота №3: CRUD для користувачів з валідацією Pydantic",
-    version="1.0.0"
+    description="Лабораторна робота №3-5",
+    version="1.0.0",
+    lifespan=lifespan # Підключаємо життєвий цикл
 )
 
-# 2. Визначаємо функцію ініціалізації
-async def init_db():
-    async with engine.begin() as conn:
-        # Це створить таблиці у Postgres, якщо їх ще немає
-        await conn.run_sync(Base.metadata.create_all)
-
-# 3. Підключаємо подію старту (тепер об'єкт app вже існує)
-@app.on_event("startup")
-async def on_startup():
-    await init_db()
-
-# 4. Підключаємо роутери
+# Підключаємо роутери
 app.include_router(users.router)
+app.include_router(product.router)
+app.include_router(auth.router)
 
 @app.get("/")
 def root():
-    return {
-        "status": "success",
-        "message": "API працює. Перейдіть до /docs"
-    }
+    return {"message": "Я ТЕБЕ БАЧУ"}
