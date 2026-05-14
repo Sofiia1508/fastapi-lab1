@@ -1,18 +1,25 @@
-version: '3.10'
-
 services:
+  # Твоя база даних
   db:
     image: postgres:15
+    container_name: fastapi_db_lab7
     environment:
-      - POSTGRES_USER=${DB_USER}
-      - POSTGRES_PASSWORD=${DB_PASSWORD}
-      - POSTGRES_DB=${DB_NAME}
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=postgres
+      - POSTGRES_DB=fastapi_db
     ports:
       - "5432:5432"
 
+  # Твій FastAPI додаток
   web:
     build: .
     command: uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
+    environment:
+      DB_HOST: db
+      DB_PORT: 5432
+      DB_USER: postgres
+      DB_PASS: postgres
+      DB_NAME: fastapi_db
     volumes:
       - .:/app
     ports:
@@ -20,13 +27,57 @@ services:
     depends_on:
       - db
 
-  # Додаємо pgAdmin, щоб ти могла бачити таблиці в браузері
-  pgadmin:
-    image: dpage/pgadmin4
+  # Моніторинг бази
+  postgres-exporter:
+    image: prometheuscommunity/postgres-exporter
+    container_name: postgres-exporter
     environment:
-      - PGADMIN_DEFAULT_EMAIL=${DB_PGADMIN_DEFAULT_EMAIL}
-      - PGADMIN_DEFAULT_PASSWORD=${DB_PGADMIN_DEFAULT_PASSWORD}
-    ports:
-      - "8080:80"
+      DATA_SOURCE_NAME: "postgresql://postgres:postgres@db:5432/fastapi_db?sslmode=disable"
     depends_on:
       - db
+
+  # Залишаємо те, що вже працює
+  prometheus:
+    image: prom/prometheus:latest
+    container_name: prometheus
+    command:
+      - --config.file=/etc/prometheus/prometheus.yml
+      - --web.enable-lifecycle
+    volumes:
+      - ./prometheus/prometheus.yml:/etc/prometheus/prometheus.yml
+    ports:
+      - "9090:9090"
+    depends_on:
+      - web
+      - postgres-exporter
+      - cadvisor
+
+  grafana:
+    image: grafana/grafana:latest
+    container_name: grafana
+    environment:
+      GF_SECURITY_ADMIN_USER: admin
+      GF_SECURITY_ADMIN_PASSWORD: admin
+      GF_USERS_ALLOW_SIGN_UP: "false"
+      GF_SERVER_ROOT_URL: http://localhost:3000
+      GF_AUTH_ANONYMOUS_ENABLED: "true"
+      GF_AUTH_ANONYMOUS_ORG_ROLE: Admin
+    volumes:
+      - ./grafana/provisioning:/etc/grafana/provisioning
+      - ./grafana/dashboards:/var/lib/grafana/dashboards
+    ports:
+      - "3000:3000"
+    depends_on:
+      - prometheus
+
+  cadvisor:
+    image: gcr.io/cadvisor/cadvisor:v0.47.0
+    container_name: cadvisor
+    ports:
+      - "8081:8080"
+    volumes:
+      - /:/rootfs:ro
+      - /var/run:/var/run:ro
+      - /sys:/sys:ro
+      - /var/lib/docker/:/var/lib/docker:ro
+    privileged: true

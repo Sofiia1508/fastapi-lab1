@@ -70,4 +70,4 @@ async def test_root_endpoint(ac: AsyncClient):
     """Перевірка головної ручки GET /"""
     response = await ac.get("/")
     assert response.status_code == 200
-    assert response.json() == {"message": "Я ТЕБЕ БАЧУ"}
+    assert response.json() == {"status": "WORKS 100%"}
