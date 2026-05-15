@@ -9,7 +9,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout code
-        uses: actions/checkout@v4  # Оновили до v4
+        uses: actions/checkout@v4
 
       - name: Deploy to AWS EC2
         uses: appleboy/ssh-action@master
@@ -17,27 +17,23 @@ jobs:
           host: ${{ secrets.SSH_HOST }}
           username: ${{ secrets.SSH_USER }}
           key: ${{ secrets.SSH_KEY }}
-          # Додаємо таймаут, щоб не висіло вічно
           command_timeout: 30m
           script: |
-            # 1. Оновлюємо систему та ставимо Docker
+            # 1. Встановлюємо Docker (якщо раптом злетів)
             sudo apt-get update -y
-            sudo apt-get install -y docker.io docker-compose
+            sudo apt-get install -y docker.io docker-compose-v2
             
-            # 2. Додаємо права (щоб не було помилок доступу)
-            sudo usermod -aG docker ubuntu
-            
-            # 3. Підготовка папки
+            # 2. Налаштування папки
             sudo mkdir -p /home/ubuntu/app
             sudo chown -R ubuntu:ubuntu /home/ubuntu/app
             cd /home/ubuntu/app
             
-            # 4. Очищення старої версії
-            rm -rf * .git
+            # 3. ВИДАЛЯЄМО ВСЕ СТАРЕ (щоб git clone не лаявся)
+            rm -rf * .git .github
             
-            # 5. Клонуємо заново (використовуємо HTTPS)
+            # 4. Клонуємо проект
             git clone -b dev https://github.com/${{ github.repository }}.git .
             
-            # 6. Перезапуск контейнерів
-            sudo docker-compose down || true
-            sudo docker-compose up -d --build
+            # 5. Запуск (використовуємо нову команду docker compose без дефіса)
+            sudo docker compose down || true
+            sudo docker compose up -d --build
