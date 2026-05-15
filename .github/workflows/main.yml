@@ -19,21 +19,20 @@ jobs:
           key: ${{ secrets.SSH_KEY }}
           command_timeout: 30m
           script: |
-            # 1. Встановлюємо Docker (якщо раптом злетів)
-            sudo apt-get update -y
-            sudo apt-get install -y docker.io docker-compose-v2
-            
-            # 2. Налаштування папки
+            # 1. Створюємо та переходимо в папку
             sudo mkdir -p /home/ubuntu/app
             sudo chown -R ubuntu:ubuntu /home/ubuntu/app
             cd /home/ubuntu/app
             
-            # 3. ВИДАЛЯЄМО ВСЕ СТАРЕ (щоб git clone не лаявся)
-            rm -rf * .git .github
+            # 2. Повне очищення (видаляємо все, щоб клонування було чистим)
+            sudo rm -rf * .git .github .gitignore
             
-            # 4. Клонуємо проект
+            # 3. Клонуємо проект
             git clone -b dev https://github.com/${{ github.repository }}.git .
             
-            # 5. Запуск (використовуємо нову команду docker compose без дефіса)
+            # 4. Перевіряємо чи файл на місці (просто для логів)
+            ls -la
+            
+            # 5. Запуск
             sudo docker compose down || true
             sudo docker compose up -d --build
